@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}任务调度 - 运维平台{% endblock %}
+
+{% block styles %}
+<style>
+    .task-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .task-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    .status-active {
+        background-color: #00f7ff;
+    }
+    
+    .status-inactive {
+        background-color: #ff4757;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">任务列表</h4>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTaskModal">
+            <i class='bx bx-plus'></i>
+            新建任务
+        </button>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-dark table-hover">
+            <thead>
+                <tr>
+                    <th>状态</th>
+                    <th>任务名称</th>
+                    <th>描述</th>
+                    <th>Cron表达式</th>
+                    <th>上次运行</th>
+                    <th>下次运行</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td>
+                        <span class="task-status {{ 'status-active' if task.is_active else 'status-inactive' }}"></span>
+                        {{ '活动' if task.is_active else '停止' }}
+                    </td>
+                    <td>{{ task.name }}</td>
+                    <td>{{ task.description }}</td>
+                    <td><code>{{ task.cron_expression }}</code></td>
+                    <td>{{ task.last_run.strftime('%Y-%m-%d %H:%M:%S') if task.last_run else '从未运行' }}</td>
+                    <td>{{ task.next_run.strftime('%Y-%m-%d %H:%M:%S') if task.next_run else '未调度' }}</td>
+                    <td>
+                        <div class="task-actions">
+                            <button class="btn btn-sm btn-info" onclick="editTask({{ task.id }})">
+                                <i class='bx bx-edit'></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="toggleTask({{ task.id }})">
+                                <i class='bx {{ "bx-pause" if task.is_active else "bx-play" }}'></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTask({{ task.id }})">
+                                <i class='bx bx-trash'></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 新建任务模态框 -->
+<div class="modal fade" id="newTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">新建任务</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newTaskForm">
+                    <div class="mb-3">
+                        <label class="form-label">任务名称</label>
+                        <input type="text" class="form-control bg-dark text-light" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control bg-dark text-light" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cron表达式</label>
+                        <input type="text" class="form-control bg-dark text-light" name="cron_expression" required>
+                        <div class="form-text">例如: */5 * * * * (每5分钟执行一次)</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveTask()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function editTask(taskId) {
+        // 实现编辑任务的逻辑
+    }
+    
+    function toggleTask(taskId) {
+        // 实现启用/停用任务的逻辑
+    }
+    
+    function deleteTask(taskId) {
+        // 实现删除任务的逻辑
+    }
+    
+    function saveTask() {
+        // 实现保存任务的逻辑
+    }
+</script>
+{% endblock %} 

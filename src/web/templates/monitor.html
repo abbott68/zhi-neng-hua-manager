@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}系统监控 - 运维平台{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.css" rel="stylesheet">
+<style>
+    .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 1rem 0;
+    }
+    
+    .metric-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.875rem;
+    }
+    
+    .chart-container {
+        min-height: 300px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .process-table th,
+    .process-table td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+    
+    .process-name {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 系统概览卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">CPU 使用率</div>
+            <div class="metric-value" id="cpuUsage">0%</div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="cpuProgress" role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">内存使用率</div>
+            <div class="metric-value" id="memoryUsage">0%</div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="memoryProgress" role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">磁盘使用率</div>
+            <div class="metric-value" id="diskUsage">0%</div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="diskProgress" role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">系统负载</div>
+            <div class="metric-value" id="systemLoad">0.00</div>
+            <small class="text-muted">最近1分钟平均负载</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">CPU 温度</div>
+            <div class="metric-value" id="cpuTemp">--°C</div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="cpuTempProgress" role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">硬盘温度</div>
+            <div class="metric-value" id="diskTemp">--°C</div>
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="diskTempProgress" role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="dashboard-card">
+            <h5 class="mb-3">系统资源使用趋势</h5>
+            <div class="chart-container" id="resourceChart"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 进程列表 -->
+<div class="row">
+    <div class="col-12">
+        <div class="dashboard-card">
+            <h5 class="mb-3">活跃进程 (Top 10)</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover process-table">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>进程名</th>
+                            <th>CPU使用率</th>
+                            <th>内存使用率</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+<script>
+let chart;
+let chartData = {
+    cpu: [],
+    memory: [],
+    disk: []
+};
+
+// 初始化图表
+function initChart() {
+    const options = {
+        series: [{
+            name: 'CPU使用率',
+            data: []
+        }, {
+            name: '内存使用率',
+            data: []
+        }, {
+            name: '磁盘使用率',
+            data: []
+        }],
+        chart: {
+            type: 'line',
+            height: 350,
+            animations: {
+                enabled: true,
+                easing: 'linear',
+                dynamicAnimation: {
+                    speed: 1000
+                }
+            },
+            toolbar: {
+                show: false
+            },
+            zoom: {
+                enabled: false
+            }
+        },
+        colors: ['#4c00ff', '#00f7ff', '#ff0080'],
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        grid: {
+            borderColor: 'rgba(255, 255, 255, 0.1)'
+        },
+        xaxis: {
+            type: 'datetime',
+            labels: {
+                style: {
+                    colors: 'rgba(255, 255, 255, 0.7)'
+                }
+            }
+        },
+        yaxis: {
+            max: 100,
+            labels: {
+                style: {
+                    colors: 'rgba(255, 255, 255, 0.7)'
+                }
+            }
+        },
+        legend: {
+            labels: {
+                colors: 'rgba(255, 255, 255, 0.7)'
+            }
+        },
+        tooltip: {
+            theme: 'dark'
+        }
+    };
+
+    chart = new ApexCharts(document.querySelector("#resourceChart"), options);
+    chart.render();
+}
+
+// 更新指标显示
+function updateMetrics(data) {
+    // 更新CPU信息
+    document.getElementById('cpuUsage').textContent = `${data.cpu.usage.toFixed(1)}%`;
+    document.getElementById('cpuProgress').style.width = `${data.cpu.usage}%`;
+    
+    // 更新内存信息
+    document.getElementById('memoryUsage').textContent = `${data.memory.percent.toFixed(1)}%`;
+    document.getElementById('memoryProgress').style.width = `${data.memory.percent}%`;
+    
+    // 更新磁盘信息
+    document.getElementById('diskUsage').textContent = `${data.disk.percent.toFixed(1)}%`;
+    document.getElementById('diskProgress').style.width = `${data.disk.percent}%`;
+    
+    // 更新系统负载
+    document.getElementById('systemLoad').textContent = data.cpu.load_avg[0].toFixed(2);
+    
+    // 更新进程表格
+    const processTable = document.getElementById('processTable');
+    processTable.innerHTML = data.processes.map(proc => `
+        <tr>
+            <td>${proc.pid}</td>
+            <td class="process-name">${proc.name}</td>
+            <td>${proc.cpu_percent.toFixed(1)}%</td>
+            <td>${proc.memory_percent.toFixed(1)}%</td>
+            <td>
+                <span class="badge bg-${proc.status === 'running' ? 'success' : 'warning'}">
+                    ${proc.status}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+    
+    // 更新图表数据
+    const timestamp = new Date(data.timestamp).getTime();
+    chartData.cpu.push([timestamp, data.cpu.usage]);
+    chartData.memory.push([timestamp, data.memory.percent]);
+    chartData.disk.push([timestamp, data.disk.percent]);
+    
+    // 保持最近30分钟的数据
+    const thirtyMinutesAgo = timestamp - 30 * 60 * 1000;
+    chartData.cpu = chartData.cpu.filter(point => point[0] > thirtyMinutesAgo);
+    chartData.memory = chartData.memory.filter(point => point[0] > thirtyMinutesAgo);
+    chartData.disk = chartData.disk.filter(point => point[0] > thirtyMinutesAgo);
+    
+    // 更新图表
+    chart.updateSeries([{
+        name: 'CPU使用率',
+        data: chartData.cpu
+    }, {
+        name: '内存使用率',
+        data: chartData.memory
+    }, {
+        name: '磁盘使用率',
+        data: chartData.disk
+    }]);
+    
+    // 更新温度信息
+    if (data.temperature.cpu !== null) {
+        const cpuTemp = data.temperature.cpu.toFixed(1);
+        document.getElementById('cpuTemp').textContent = `${cpuTemp}°C`;
+        
+        // 设置温度进度条颜色和宽度
+        const cpuTempProgress = document.getElementById('cpuTempProgress');
+        const cpuTempPercent = (cpuTemp / 100) * 100;  // 假设100度为最高温度
+        cpuTempProgress.style.width = `${cpuTempPercent}%`;
+        
+        if (cpuTemp >= 80) {
+            cpuTempProgress.className = 'progress-bar bg-danger';
+        } else if (cpuTemp >= 60) {
+            cpuTempProgress.className = 'progress-bar bg-warning';
+        } else {
+            cpuTempProgress.className = 'progress-bar bg-success';
+        }
+    }
+    
+    // 更新硬盘温度
+    const diskTemps = data.temperature.disks;
+    if (Object.keys(diskTemps).length > 0) {
+        const avgTemp = Object.values(diskTemps).reduce((a, b) => a + b, 0) / Object.keys(diskTemps).length;
+        document.getElementById('diskTemp').textContent = `${avgTemp.toFixed(1)}°C`;
+        
+        const diskTempProgress = document.getElementById('diskTempProgress');
+        const diskTempPercent = (avgTemp / 60) * 100;  // 假设60度为最高温度
+        diskTempProgress.style.width = `${diskTempPercent}%`;
+        
+        if (avgTemp >= 50) {
+            diskTempProgress.className = 'progress-bar bg-danger';
+        } else if (avgTemp >= 40) {
+            diskTempProgress.className = 'progress-bar bg-warning';
+        } else {
+            diskTempProgress.className = 'progress-bar bg-success';
+        }
+    }
+}
+
+// 定期获取最新数据
+function fetchMetrics() {
+    fetch('/api/metrics/realtime')
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                updateMetrics(result.data);
+            }
+        })
+        .catch(error => console.error('获取监控数据失败:', error));
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    fetchMetrics();  // 立即获取一次数据
+    setInterval(fetchMetrics, 5000);  // 每5秒更新一次
+});
+</script>
+{% endblock %} 

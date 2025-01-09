@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}自动化规则 - 运维平台{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4>自动化规则</h4>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRuleModal">
+                    <i class='bx bx-plus'></i> 添加规则
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 规则列表 -->
+    <div class="row" id="rulesList">
+        {% for rule in rules %}
+        <div class="col-md-4 mb-4">
+            <div class="dashboard-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>{{ rule.name }}</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               onchange="toggleRule({{ rule.id }})"
+                               {% if rule.enabled %}checked{% endif %}>
+                    </div>
+                </div>
+                <div class="rule-info">
+                    <p><i class='bx bx-target-lock'></i> {{ rule.trigger_type }}</p>
+                    <p><i class='bx bx-cog'></i> {{ rule.actions|length }} 个动作</p>
+                    {% if rule.last_triggered %}
+                    <p><i class='bx bx-time'></i> 最后触发: {{ rule.last_triggered.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 新建规则模态框 -->
+<div class="modal fade" id="newRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">添加自动化规则</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ruleForm">
+                    <div class="mb-3">
+                        <label class="form-label">规则名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">触发类型</label>
+                        <select class="form-select" name="trigger_type" required>
+                            <option value="metric">指标触发</option>
+                            <option value="event">事件触发</option>
+                            <option value="schedule">定时触发</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">触发条件</label>
+                        <textarea class="form-control" name="trigger_condition" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">执行动作</label>
+                        <textarea class="form-control" name="actions" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveRule()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveRule() {
+    const form = document.getElementById('ruleForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // 转换JSON字符串
+    try {
+        data.trigger_condition = JSON.parse(data.trigger_condition);
+        data.actions = JSON.parse(data.actions);
+    } catch (e) {
+        alert('JSON格式错误');
+        return;
+    }
+    
+    fetch('/api/automation/rules', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('保存失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('保存失败：' + error);
+    });
+}
+
+function toggleRule(ruleId) {
+    fetch(`/api/automation/rules/${ruleId}/toggle`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            alert('操作失败：' + data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+        location.reload();
+    });
+}
+</script>
+{% endblock %} 

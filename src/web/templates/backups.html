@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}备份管理 - 运维平台{% endblock %}
+
+{% block styles %}
+<style>
+    .backup-progress {
+        height: 5px;
+        margin-top: 0.5rem;
+    }
+    
+    .backup-size {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .backup-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .backup-type-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+    
+    .backup-details {
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">备份管理</h4>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newBackupModal">
+                <i class='bx bx-plus'></i> 新建备份
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for backup in backups %}
+    <div class="col-md-6 col-xl-4 mb-4">
+        <div class="dashboard-card">
+            <span class="backup-type-badge badge bg-{{ 'primary' if backup.type == 'full' else 'info' }}">
+                {{ '全量备份' if backup.type == 'full' else '增量备份' }}
+            </span>
+            
+            <h5 class="mb-3">{{ backup.name }}</h5>
+            
+            <div class="backup-details">
+                <div class="mb-2">
+                    <i class='bx bx-folder'></i> 源路径：{{ backup.source }}
+                </div>
+                <div class="mb-2">
+                    <i class='bx bx-folder-open'></i> 目标路径：{{ backup.destination }}
+                </div>
+                {% if backup.size %}
+                <div class="backup-size mb-2">
+                    <i class='bx bx-data'></i> 大小：{{ (backup.size / 1024 / 1024)|round(2) }} MB
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if backup.status == 'running' %}
+            <div class="progress backup-progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 75%"></div>
+            </div>
+            {% endif %}
+            
+            <hr class="border-secondary my-3">
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-{{ 
+                        'success' if backup.status == 'completed' 
+                        else 'warning' if backup.status == 'pending'
+                        else 'info' if backup.status == 'running'
+                        else 'danger'
+                    }}">{{ backup.status }}</span>
+                    
+                    {% if backup.completed_at %}
+                    <small class="text-muted ms-2">
+                        完成于: {{ backup.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                    </small>
+                    {% endif %}
+                </div>
+                
+                <div class="backup-actions">
+                    {% if backup.status == 'completed' %}
+                    <button class="btn btn-sm btn-info" onclick="downloadBackup({{ backup.id }})">
+                        <i class='bx bx-download'></i>
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-danger" onclick="deleteBackup({{ backup.id }})">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 新建备份模态框 -->
+<div class="modal fade" id="newBackupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">新建备份</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newBackupForm">
+                    <div class="mb-3">
+                        <label class="form-label">备份名称</label>
+                        <input type="text" class="form-control bg-dark text-light" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">备份类型</label>
+                        <select class="form-select bg-dark text-light" name="type" required>
+                            <option value="full">全量备份</option>
+                            <option value="incremental">增量备份</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">源路径</label>
+                        <input type="text" class="form-control bg-dark text-light" name="source" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">目标路径</label>
+                        <input type="text" class="form-control bg-dark text-light" name="destination" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createBackup()">开始备份</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function downloadBackup(backupId) {
+        // 实现下载备份的逻辑
+    }
+    
+    function deleteBackup(backupId) {
+        if (confirm('确定要删除这个备份吗？')) {
+            // 实现删除备份的逻辑
+        }
+    }
+    
+    function createBackup() {
+        // 实现创建备份的逻辑
+    }
+    
+    // 定期更新正在运行的备份状态
+    setInterval(() => {
+        // 实现更新备份状态的逻辑
+    }, 5000);
+</script>
+{% endblock %} 

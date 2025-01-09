@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}告警管理 - 运维平台{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4>告警规则</h4>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAlertModal">
+                    <i class='bx bx-plus'></i> 添加规则
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 告警规则列表 -->
+    <div class="row" id="alertsList">
+        {% for alert in alerts %}
+        <div class="col-md-4 mb-4">
+            <div class="dashboard-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>{{ alert.name }}</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               onchange="toggleAlert({{ alert.id }})"
+                               {% if alert.enabled %}checked{% endif %}>
+                    </div>
+                </div>
+                <div class="alert-info">
+                    <p><i class='bx bx-chip'></i> {{ alert.metric_type }}.{{ alert.metric_name }}</p>
+                    <p><i class='bx bx-trending-up'></i> {{ alert.condition }} {{ alert.threshold }}</p>
+                    <p><i class='bx bx-time'></i> 持续 {{ alert.duration }}秒</p>
+                    <p><i class='bx bx-error'></i> {{ alert.severity }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 新建告警规则模态框 -->
+<div class="modal fade" id="newAlertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">添加告警规则</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="alertForm">
+                    <div class="mb-3">
+                        <label class="form-label">规则名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">指标类型</label>
+                        <select class="form-select" name="metric_type" required>
+                            <option value="cpu">CPU</option>
+                            <option value="memory">内存</option>
+                            <option value="disk">磁盘</option>
+                            <option value="network">网络</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">指标名称</label>
+                        <input type="text" class="form-control" name="metric_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">条件</label>
+                        <select class="form-select" name="condition" required>
+                            <option value=">">大于</option>
+                            <option value="<">小于</option>
+                            <option value=">=">大于等于</option>
+                            <option value="<=">小于等于</option>
+                            <option value="==">等于</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">阈值</label>
+                        <input type="number" class="form-control" name="threshold" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">持续时间(秒)</label>
+                        <input type="number" class="form-control" name="duration" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">严重程度</label>
+                        <select class="form-select" name="severity" required>
+                            <option value="info">信息</option>
+                            <option value="warning">警告</option>
+                            <option value="error">错误</option>
+                            <option value="critical">严重</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveAlert()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveAlert() {
+    const form = document.getElementById('alertForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('/api/alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('保存失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('保存失败：' + error);
+    });
+}
+
+function toggleAlert(alertId) {
+    fetch(`/api/alerts/${alertId}/toggle`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            alert('操作失败：' + data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+        location.reload();
+    });
+}
+</script>
+{% endblock %} 

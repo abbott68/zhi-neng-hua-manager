@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}系统配置 - 运维平台{% endblock %}
+
+{% block page_title %}系统配置{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">监控配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="monitor-config-form">
+                    <div class="mb-3">
+                        <label class="form-label">CPU 使用率阈值 (%)</label>
+                        <input type="number" class="form-control" name="cpu_threshold" value="80">
+                    </div>
+                    <!-- 添加更多配置项 -->
+                    <button type="submit" class="btn btn-primary">保存配置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 添加更多配置卡片 -->
+</div>
+{% endblock %} 

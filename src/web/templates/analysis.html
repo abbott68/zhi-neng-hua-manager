@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}系统分析 - 运维平台{% endblock %}
+
+{% block styles %}
+<style>
+    .analysis-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .trend-up {
+        color: #dc3545;
+    }
+    
+    .trend-down {
+        color: #28a745;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h4>系统性能分析</h4>
+        </div>
+    </div>
+
+    <!-- 性能分析部分 -->
+    {% if performance_report %}
+    <div class="row">
+        <div class="col-md-6">
+            <div class="analysis-card">
+                <h5>CPU 使用情况</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">平均使用率</small>
+                        <div class="metric-value">
+                            {{ "%.1f"|format(performance_report.content.analysis.cpu.avg) }}%
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">最高使用率</small>
+                        <div class="metric-value">
+                            {{ "%.1f"|format(performance_report.content.analysis.cpu.max) }}%
+                        </div>
+                    </div>
+                </div>
+                {% if performance_report.content.plot_path %}
+                <img src="{{ url_for('static', filename=performance_report.content.plot_path) }}" 
+                     class="img-fluid mt-3" alt="CPU Usage Trend">
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="analysis-card">
+                <h5>内存使用情况</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">平均使用率</small>
+                        <div class="metric-value">
+                            {{ "%.1f"|format(performance_report.content.analysis.memory.avg) }}%
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">最高使用率</small>
+                        <div class="metric-value">
+                            {{ "%.1f"|format(performance_report.content.analysis.memory.max) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 预测分析部分 -->
+    {% if prediction_report %}
+    <div class="row mt-4">
+        <div class="col">
+            <h4>资源使用预测</h4>
+        </div>
+    </div>
+    
+    <div class="row">
+        {% for resource_type, pred in prediction_report.content.predictions.items() %}
+        <div class="col-md-4">
+            <div class="analysis-card">
+                <h5>{{ resource_type|upper }} 预测</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">当前使用率</small>
+                        <div class="metric-value">
+                            {{ "%.1f"|format(pred.current) }}%
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">预测趋势</small>
+                        <div class="metric-value {{ 'trend-up' if pred.trend == 'up' else 'trend-down' }}">
+                            {{ '↑' if pred.trend == 'up' else '↓' }}
+                            {{ "%.1f"|format(pred.slope|abs) }}%/h
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if prediction_report.content.plot_path %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="analysis-card">
+                <h5>24小时预测趋势</h5>
+                <img src="{{ url_for('static', filename=prediction_report.content.plot_path) }}" 
+                     class="img-fluid" alt="Resource Usage Prediction">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if not performance_report %}
+    <div class="alert alert-info">
+        <i class='bx bx-info-circle'></i>
+        暂无性能分析数据，系统将在收集足够的数据后自动生成分析报告。
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 可以添加一些交互性的JavaScript代码
+document.addEventListener('DOMContentLoaded', function() {
+    // 自动刷新数据
+    setInterval(function() {
+        fetch('/api/analysis/performance')
+            .then(response => response.json())
+            .then(data => {
+                // 更新页面数据
+            });
+    }, 300000); // 每5分钟刷新一次
+});
+</script>
+{% endblock %} 

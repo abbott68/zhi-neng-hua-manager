@@ -1,0 +1,17 @@
+flask
+flask-sqlalchemy
+flask-login
+flask-migrate
+pymysql
+cryptography
+pyyaml
+python-nmap
+paramiko
+requests
+mysql-connector-python>=8.0.0
+redis>=4.0.0
+pymongo>=4.0.0
+apscheduler
+pandas
+plotly
+scikit-learn

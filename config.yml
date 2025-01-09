@@ -1,0 +1,20 @@
+# 数据库配置
+database:
+  url: mysql+pymysql://dev:dev@123@172.17.0.2:3306/ops_platform?charset=utf8mb4  # 使用 127.0.0.1 替代 localhost
+  track_modifications: false
+
+# 应用配置
+app:
+  secret_key: your-secret-key-here
+  debug: true
+
+# 日志配置
+logging:
+  level: INFO
+  file: logs/app.log
+  max_size: 10240
+  backup_count: 10
+
+# 定时任务配置
+scheduler:
+  metrics_interval: 300  # 5分钟 
