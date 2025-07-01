@@ -1,0 +1,83 @@
+version: '3.8'
+
+# 使用.env文件加载环境变量
+# 复制.env.example为.env并根据需要修改
+
+services:
+  app:
+    build: .
+    container_name: zhi-neng-hua-manager
+    restart: always
+    ports:
+      - "${FLASK_PORT:-5000}:${FLASK_PORT:-5000}"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config.yml:/app/config.yml
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=${FLASK_APP:-src.web.app}
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_HOST=${FLASK_HOST:-0.0.0.0}
+      - FLASK_PORT=${FLASK_PORT:-5000}
+      - DB_HOST=${DB_HOST:-mysql}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-dev}
+      - DB_PASS=${DB_PASS:-dev@123}
+      - DB_NAME=${DB_NAME:-ops_platform}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - MYSQL_USER=${MYSQL_USER:-dev}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-dev@123}
+      - HEALTH_CHECK_URL=http://localhost:${FLASK_PORT:-5000}/health
+    healthcheck:
+      test: ["CMD", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: zhi-neng-hua-mysql
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-ops_platform}
+      - MYSQL_USER=${MYSQL_USER:-dev}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-dev@123}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    networks:
+      - app-network
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: zhi-neng-hua-redis
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - redis-data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:

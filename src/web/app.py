@@ -49,6 +49,36 @@ def create_app():
     app.register_blueprint(api_bp)
     app.register_blueprint(auth_bp)
     
+    # 添加健康检查端点
+    @app.route('/health')
+    def health_check():
+        try:
+            # 检查数据库连接
+            db.session.execute('SELECT 1')
+            
+            # 检查系统资源
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            
+            return {
+                'status': 'healthy',
+                'timestamp': datetime.now().isoformat(),
+                'database': 'connected',
+                'system': {
+                    'cpu': cpu_percent,
+                    'memory': memory.percent,
+                    'disk': disk.percent
+                }
+            }, 200
+        except Exception as e:
+            app.logger.error(f'健康检查失败: {str(e)}')
+            return {
+                'status': 'unhealthy',
+                'timestamp': datetime.now().isoformat(),
+                'error': str(e)
+            }, 500
+    
     # 设置日志
     if not os.path.exists('logs'):
         os.mkdir('logs')
@@ -135,4 +165,4 @@ def init_scheduler(app):
 if __name__ == '__main__':
     app = create_app()
     init_scheduler(app)
-    app.run(debug=True) 
+    app.run(debug=True)
